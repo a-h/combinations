@@ -2,11 +2,23 @@ package combinations
 
 import (
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func ExampleOfStrings() {
+	n := 2
+	r := []string{"a", "b", "c"}
+	f := func(combination []string) (stop bool) {
+		fmt.Println(combination)
+		return false
+	}
+	OfStrings(n, r, f)
+	// Output: [a b]
+	// [a c]
+	// [b c]
+}
 
 func TestOfInts(t *testing.T) {
 	var tests = []struct {
@@ -128,19 +140,13 @@ func TestStop(t *testing.T) {
 	}
 }
 
-func TestBigNumbers(t *testing.T) {
-	count := new(big.Int)
-	one := big.NewInt(1)
-	oneMillion := big.NewInt(1000000)
-	All(-1, 64, func(combination []int) (stop bool) {
-		count = count.Add(count, one)
-		if result := count.Mod(count, oneMillion); result == big.NewInt(0) {
-			fmt.Println(count)
-		}
-		return false
-	})
-	expected := new(big.Int).Exp(big.NewInt(2), big.NewInt(64), nil)
-	if expected.Cmp(count) != 0 {
-		t.Errorf("expected %v, got %v", expected, count)
+func BenchmarkAll(b *testing.B) {
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		var count int
+		All(-1, 5, func(combination []int) (stop bool) {
+			count++
+			return false
+		})
 	}
 }
