@@ -2,12 +2,13 @@ package combinations
 
 import (
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestN(t *testing.T) {
+func TestOfInts(t *testing.T) {
 	var tests = []struct {
 		n        int
 		r        []int
@@ -53,7 +54,7 @@ func TestN(t *testing.T) {
 		tt := tt
 		t.Run(fmt.Sprint(tt.n), func(t *testing.T) {
 			var actual [][]int
-			N(tt.n, tt.r, func(combination []int) (stop bool) {
+			OfInts(tt.n, tt.r, func(combination []int) (stop bool) {
 				actual = append(actual, combination)
 				return false
 			})
@@ -65,7 +66,7 @@ func TestN(t *testing.T) {
 	}
 }
 
-func TestStrings(t *testing.T) {
+func TestOfStrings(t *testing.T) {
 	var tests = []struct {
 		n        int
 		r        []string
@@ -101,7 +102,7 @@ func TestStrings(t *testing.T) {
 		tt := tt
 		t.Run(fmt.Sprintf("%d of %v", tt.n, tt.r), func(t *testing.T) {
 			var actual [][]string
-			Strings(tt.n, tt.r, func(combination []string) (stop bool) {
+			OfStrings(tt.n, tt.r, func(combination []string) (stop bool) {
 				actual = append(actual, combination)
 				return false
 			})
@@ -110,5 +111,36 @@ func TestStrings(t *testing.T) {
 				t.Errorf(diff)
 			}
 		})
+	}
+}
+
+func TestStop(t *testing.T) {
+	var count int
+	All(-1, 8, func(combination []int) (stop bool) {
+		count++
+		if count == 4 {
+			return true
+		}
+		return false
+	})
+	if count != 4 {
+		t.Errorf("expected to be able to stop, but all combinations were processed")
+	}
+}
+
+func TestBigNumbers(t *testing.T) {
+	count := new(big.Int)
+	one := big.NewInt(1)
+	oneMillion := big.NewInt(1000000)
+	All(-1, 64, func(combination []int) (stop bool) {
+		count = count.Add(count, one)
+		if result := count.Mod(count, oneMillion); result == big.NewInt(0) {
+			fmt.Println(count)
+		}
+		return false
+	})
+	expected := new(big.Int).Exp(big.NewInt(2), big.NewInt(64), nil)
+	if expected.Cmp(count) != 0 {
+		t.Errorf("expected %v, got %v", expected, count)
 	}
 }

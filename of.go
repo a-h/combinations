@@ -1,19 +1,13 @@
 package combinations
 
 import (
-	"errors"
-	"math/bits"
+	"math/big"
 )
 
-// String returns combinations of n values out of the r options.
+// OfStrings returns combinations of n values out of the r options.
 // Pass n < 0 to return all possible combinations (including no items).
-// The maximum length of r is 63.
-func Strings(n int, r []string, f func(combination []string) (stop bool)) {
-	values := make([]int, len(r))
-	for i := 0; i < len(values); i++ {
-		values[i] = i
-	}
-	N(n, values, func(permutation []int) (stop bool) {
+func OfStrings(n int, r []string, f func(combination []string) (stop bool)) {
+	All(n, len(r), func(permutation []int) (stop bool) {
 		op := make([]string, len(permutation))
 		for i := 0; i < len(permutation); i++ {
 			op[i] = r[permutation[i]]
@@ -22,47 +16,43 @@ func Strings(n int, r []string, f func(combination []string) (stop bool)) {
 	})
 }
 
-func hasBit(n uint, pos uint) bool {
-	return (n & (1 << pos)) > 0
-}
-
-func pow(a, b uint64) uint64 {
-	p := uint64(1)
-	for b > 0 {
-		if b&1 != 0 {
-			p *= a
-		}
-		b >>= 1
-		a *= a
-	}
-	return p
-}
-
-var ErrOverflow = errors.New("combinations: the maximum length of r is 63")
-
-// N returns combinations of n values out of the r options.
+// All returns combinations of r values.
 // Pass n < 0 to return all possible combinations (including no items).
-// The maximum length of r is 63.
-func N(n int, r []int, f func(combination []int) (stop bool)) error {
-	if len(r) > 63 {
-		return ErrOverflow
+func All(n int, r int, f func(combination []int) (stop bool)) {
+	values := make([]int, r)
+	for i := 0; i < r; i++ {
+		values[i] = i
 	}
-	max := pow(2, uint64(len(r)))
-	for c := uint64(0); c < max; c++ {
-		onesCount := bits.OnesCount(uint(c))
+	OfInts(n, values, f)
+}
+
+// OfInts returns combinations of n values out of the r options.
+// Pass n < 0 to return all possible combinations (including no items).
+func OfInts(n int, r []int, f func(combination []int) (stop bool)) {
+	max := new(big.Int).Exp(big.NewInt(2), big.NewInt(int64(len(r))), nil)
+	one := big.NewInt(1)
+	for c := new(big.Int); c.Cmp(max) == -1; c = c.Add(c, one) {
+		onesCount := onesCount(c)
 		if n < 0 || onesCount == n {
 			combination := make([]int, onesCount)
 			var j int
 			for i := 0; i < len(r); i++ {
-				if hasBit(uint(c), uint(i)) {
+				if c.Bit(i) == 1 {
 					combination[j] = r[i]
 					j++
 				}
 			}
 			if stop := f(combination); stop {
-				return nil
+				return
 			}
 		}
 	}
-	return nil
+	return
+}
+
+func onesCount(v *big.Int) (op int) {
+	for i := 0; i < v.BitLen(); i++ {
+		op += int(v.Bit(i))
+	}
+	return op
 }
